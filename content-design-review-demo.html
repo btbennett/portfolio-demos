@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Content design review in a pull request: demo</title>
+<style>
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
+  body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:#f5f5f5;color:#333;line-height:1.5}
+  code,pre,.mono{font-family:Consolas,'Courier New',monospace}
+
+  /* ── Top banner ── */
+  .top-banner{background:linear-gradient(135deg,#0078d4,#005a9e);color:#fff;text-align:center;padding:18px 24px;font-size:22px;font-weight:600;letter-spacing:.3px;position:sticky;top:0;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,.18)}
+  .top-banner span{opacity:.7;font-weight:400;font-size:15px;display:block;margin-top:2px}
+
+  .page-wrap{max-width:1100px;margin:0 auto;padding:32px 20px 80px}
+
+  /* ── PR Header card ── */
+  .pr-header-card{background:#fff;border:1px solid #e1e1e1;border-radius:6px;padding:24px 28px;margin-bottom:20px}
+  .pr-breadcrumb{font-size:12px;color:#666;margin-bottom:12px}
+  .pr-breadcrumb a{color:#0078d4;text-decoration:none}
+  .pr-title-row{display:flex;align-items:center;gap:14px;margin-bottom:10px}
+  .pr-title-row h1{font-size:20px;font-weight:600;color:#222}
+  .pr-status{display:inline-block;background:#107c10;color:#fff;font-size:11px;font-weight:600;padding:2px 10px;border-radius:10px;text-transform:uppercase;letter-spacing:.5px}
+  .pr-meta{display:flex;align-items:center;gap:16px;font-size:13px;color:#555;flex-wrap:wrap}
+  .avatar{width:28px;height:28px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;flex-shrink:0}
+  .avatar-blue{background:#0078d4}
+  .avatar-green{background:#107c10}
+  .branch-pill{background:#f0f0f0;font-family:Consolas,monospace;font-size:12px;padding:2px 8px;border-radius:3px;color:#333}
+  .pr-tabs{display:flex;gap:0;border-bottom:2px solid #e1e1e1;margin-top:16px}
+  .pr-tab{padding:8px 18px;font-size:13px;color:#555;cursor:default;border-bottom:2px solid transparent;margin-bottom:-2px;font-weight:500}
+  .pr-tab.active{color:#0078d4;border-bottom-color:#0078d4;font-weight:600}
+
+  /* ── File breadcrumb bar ── */
+  .file-bar{background:#fff;border:1px solid #e1e1e1;border-radius:6px 6px 0 0;padding:10px 16px;font-size:13px;color:#333;display:flex;align-items:center;gap:6px;margin-bottom:0}
+  .file-bar .sep{color:#999}
+
+  /* ── Diff area ── */
+  .diff-area{background:#fff;border:1px solid #e1e1e1;border-top:none;border-radius:0 0 6px 6px;overflow-x:auto;margin-bottom:0}
+  .diff-table{width:100%;border-collapse:collapse;font-size:12.5px;line-height:1.55}
+  .diff-table td{padding:1px 8px;vertical-align:top;white-space:pre}
+  .diff-table .ln-old,.diff-table .ln-new{width:42px;min-width:42px;text-align:right;color:#959da5;user-select:none;font-size:11.5px;padding-right:6px}
+  .diff-table .ln-old{border-right:1px solid #eee}
+  .diff-table .ln-new{border-right:1px solid #eee}
+  .diff-table .sign{width:16px;min-width:16px;text-align:center;user-select:none}
+  .diff-removed{background:#ffeef0;transition:all .3s ease}
+  .diff-removed .sign{color:#d73a49}
+  .diff-added{background:#e6ffec;transition:all .3s ease}
+  .diff-added .sign{color:#22863a}
+  .diff-ctx{background:#fff}
+  .diff-skip{background:#f6f8fa;color:#959da5;font-style:italic;text-align:center}
+
+  /* ── PR Comment card ── */
+  .pr-comment-card{background:#fff;border:1px solid #e1e1e1;border-radius:6px;margin:16px 0;box-shadow:0 1px 4px rgba(0,0,0,.06);overflow:hidden;transition:all .35s ease}
+  .pr-comment-inner{padding:16px 20px;transition:all .3s ease}
+  .comment-header{display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap}
+  .comment-author{font-weight:600;font-size:13.5px;color:#222}
+  .comment-time{font-size:12px;color:#999}
+  .comment-actions{margin-left:auto;display:flex;gap:8px;align-items:center;font-size:14px;color:#999}
+  .comment-actions span{cursor:default}
+  .resolve-check{font-size:12px;color:#107c10;display:flex;align-items:center;gap:4px}
+
+  .bot-label{font-weight:700;font-size:14px;color:#333;margin-bottom:8px}
+
+  .tag-row{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:12px}
+  .tag{display:inline-block;background:#f3f3f3;border:1px solid #e0e0e0;border-radius:3px;padding:1px 8px;font-size:11.5px;color:#444;font-weight:500}
+  .tag-sev-high{background:#fce8e8;border-color:#e8a0a0;color:#a80000}
+  .tag-sev-med{background:#fff4e5;border-color:#e8c880;color:#8a6d00}
+  .tag-sev-low{background:#e8f5e8;border-color:#a0d0a0;color:#1a6b1a}
+
+  .comment-body{font-size:13.5px;color:#333;margin-bottom:14px;line-height:1.6}
+  .comment-body code{background:#f3f3f3;padding:1px 5px;border-radius:3px;font-size:12.5px}
+
+  .suggested-change{border:1px solid #d0d7de;border-radius:6px;margin:12px 0;overflow:hidden}
+  .suggested-change-header{background:#f6f8fa;padding:8px 12px;font-size:12.5px;font-weight:600;color:#333;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #d0d7de}
+  .apply-btn{background:#2ea44f;color:#fff;border:none;padding:4px 12px;border-radius:4px;font-size:11.5px;font-weight:600;cursor:pointer;transition:all .3s ease}
+  .apply-btn:hover:not(:disabled){background:#278c41}
+  .apply-btn:disabled{cursor:default;opacity:1}
+  .apply-btn.applied{background:#e6ffec;color:#1a7f37;border:1px solid #a0d0a0}
+
+  .comment-meta{font-size:12px;color:#666;margin:8px 0 4px}
+  .comment-fk{font-size:12px;color:#666;margin:2px 0 4px;font-style:italic}
+  .margin-note{display:inline-block;background:linear-gradient(135deg,#0078d4,#005a9e);color:#fff;font-size:13px;font-weight:600;padding:7px 14px;border-radius:6px;margin:16px 0 0;box-shadow:0 1px 4px rgba(0,0,0,.12)}
+  .comment-source{font-size:12px;color:#888;margin-bottom:8px;font-style:italic}
+
+  .rate-box{border:1px solid #e1e1e1;border-radius:6px;padding:10px 14px;margin:12px 0;display:flex;align-items:center;gap:12px;flex-wrap:wrap;font-size:12.5px;color:#555}
+  .rate-btn{border:1px solid #c8c8c8;border-radius:4px;padding:3px 12px;font-size:12px;cursor:pointer;background:#fff;color:#333;transition:all .2s ease}
+  .rate-btn:hover{background:#f3f3f3}
+  .rate-btn.selected{border-color:#0078d4;background:#e8f2fc;color:#0078d4}
+  .rate-btn.selected .thumb{display:inline-block;transform:scale(1.25);transition:transform .2s ease}
+  .support-link{color:#0078d4;text-decoration:none;margin-left:auto}
+
+  .ai-disclaimer{font-size:11.5px;color:#999;margin:8px 0;line-height:1.5}
+  .ai-disclaimer a{color:#0078d4;text-decoration:none}
+
+  .expand-skills{font-size:12.5px;color:#0078d4;cursor:pointer;margin:6px 0;user-select:none}
+  .expand-skills .skills-panel{padding:8px 14px;font-size:12px;color:#666;background:#f9f9f9;border-radius:4px;margin-top:4px;border:1px solid #e8e8e8}
+
+  .reply-bar{border-top:1px solid #e8e8e8;padding:10px 16px;display:flex;align-items:center;gap:10px;background:#fafafa}
+  .reply-input{flex:1;border:1px solid #d0d0d0;border-radius:4px;padding:6px 10px;font-size:13px;color:#999;background:#fff}
+  .resolve-btn{background:#0078d4;color:#fff;border:none;padding:6px 16px;border-radius:4px;font-size:12.5px;font-weight:600;cursor:pointer;transition:all .2s ease}
+  .resolve-btn:hover{background:#005a9e}
+
+  /* ── Collapsed resolved card ── */
+  .resolved-bar{display:flex;align-items:center;gap:10px;padding:10px 16px;font-size:13px;color:#555;background:#fafafa;border-radius:6px;border:1px solid #e1e1e1;margin:16px 0;cursor:default;animation:fadeIn .3s ease}
+  .resolved-bar .resolved-text{color:#107c10;font-weight:600;margin-left:auto;font-size:12px}
+
+  @keyframes fadeIn{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:translateY(0)}}
+
+  /* Row hide animation */
+  .diff-row-hiding{opacity:0;max-height:0;overflow:hidden;padding-top:0!important;padding-bottom:0!important;line-height:0!important;border:none!important}
+  tr.diff-row-hiding td{padding-top:0!important;padding-bottom:0!important;line-height:0!important;font-size:0!important;border:none!important}
+
+  /* Watermark */
+  .watermark{position:fixed;bottom:20px;right:28px;font-size:48px;font-weight:800;color:rgba(0,0,0,.04);letter-spacing:6px;pointer-events:none;z-index:50;text-transform:uppercase}
+</style>
+</head>
+<body>
+
+<!-- Top Banner -->
+<div class="top-banner">
+  Content design review in a pull request
+  <span>15 rule sections · 18 content strategy source files</span>
+  <span>A re-creation of a real review. Internal names, paths, and line numbers are changed. Readability scores are recalculated without locked product names, so they may differ slightly from the real tool's.</span>
+</div>
+
+<div class="page-wrap">
+
+<!-- PR Header -->
+<div class="pr-header-card">
+  <div class="pr-breadcrumb"><a href="#">Security product</a> <span class="sep">/</span> <a href="#">Portal client</a> <span class="sep">/</span> Pull requests</div>
+  <div class="pr-title-row">
+    <h1>Update user-facing strings</h1>
+    <span class="pr-status">Active</span>
+  </div>
+  <div class="pr-meta">
+    <span class="avatar avatar-blue">BB</span>
+    <span><strong>Brendon Bennett</strong> requested a review</span>
+    <span class="branch-pill">users/author/string-updates</span>
+    <span style="color:#999">→</span>
+    <span class="branch-pill">main</span>
+  </div>
+  <div class="pr-tabs">
+    <div class="pr-tab">Overview</div>
+    <div class="pr-tab active">Files <span style="background:#e8e8e8;border-radius:8px;padding:0 6px;margin-left:3px;font-size:11px">3</span></div>
+    <div class="pr-tab">Updates</div>
+    <div class="pr-tab">Commits</div>
+  </div>
+</div>
+
+<!-- File bar -->
+<div class="file-bar">
+  <span style="color:#999">📄</span>
+  <span>src</span><span class="sep">/</span><span>localization</span><span class="sep">/</span><strong>Strings.ts</strong>
+</div>
+
+<!-- Diff area with comments -->
+<div class="diff-area">
+
+  <!-- Context lines before comment 1 -->
+  <table class="diff-table">
+    <tr class="diff-skip"><td colspan="5" style="padding:6px;text-align:center;font-size:12px">@@ -10,8 +10,8 @@ export const strings = {</td></tr>
+    <tr class="diff-ctx"><td class="ln-old">10</td><td class="ln-new">10</td><td class="sign"></td><td>  }),</td></tr>
+    <tr class="diff-ctx"><td class="ln-old">11</td><td class="ln-new">11</td><td class="sign"></td><td></td></tr>
+    <tr class="diff-ctx"><td class="ln-old">12</td><td class="ln-new">12</td><td class="sign"></td><td>  // Page header strings</td></tr>
+    <tr class="diff-ctx"><td class="ln-old">13</td><td class="ln-new">13</td><td class="sign"></td><td></td></tr>
+  </table>
+
+  <!-- ──── COMMENT 1 ──── -->
+  <div class="pr-comment-card" data-category="Content Design: Security Language">
+    <div class="pr-comment-inner">
+      <div class="comment-header">
+        <span class="avatar avatar-green" style="width:30px;height:30px;font-size:13px">R</span>
+        <span class="comment-author">Review bot</span>
+        <span class="comment-time">· 2h ago</span>
+        <div class="comment-actions">
+          <span>🔗</span><span>📋</span><span>▾</span>
+          <span class="resolve-check">Resolved ✓</span>
+        </div>
+      </div>
+
+      <div class="bot-label">PR assistant-Content review</div>
+
+      <div class="tag-row">
+        <span class="tag">AI Code Review</span>
+        <span class="tag">Iteration 1</span>
+        <span class="tag">Content Design: Security Language</span>
+        <span class="tag">Severity</span>
+        <span class="tag tag-sev-high">High</span>
+      </div>
+
+      <div class="comment-body">
+        <code>PageDescription</code>: The string makes three unqualified security claims. <strong>(1)</strong> "secure" is a restricted security term. Use "help secure" to avoid implying absolute protection (Section 3). <strong>(2)</strong> "Microsoft Copilot" includes the "Microsoft" prefix unnecessarily. Drop it in portal context where the brand is already established (Section 2). <strong>(3)</strong> "safe" is a trigger word. Even with "helps," use the comparative "safer" (Section 3).
+        <br><br>Here is the suggested code:
+      </div>
+
+      <div class="suggested-change">
+        <div class="suggested-change-header">
+          <span>Suggested change</span>
+          <button class="apply-btn" onclick="applyChange(this)">Apply change</button>
+        </div>
+        <table class="diff-table">
+          <tr class="diff-ctx"><td class="ln-old">14</td><td class="ln-new">14</td><td class="sign"></td><td>  PageDescription: translate(</td></tr>
+          <tr class="diff-ctx"><td class="ln-old">15</td><td class="ln-new">15</td><td class="sign"></td><td>    "PageDescription" /* Page description */,</td></tr>
+          <tr class="diff-removed"><td class="ln-old">16</td><td class="ln-new"></td><td class="sign">−</td><td>    "Discover and secure all AI activity in Microsoft Copilot, agents, and other AI apps. DSPM for AI helps you monitor and keep your data safe. {0}",</td></tr>
+          <tr class="diff-added"><td class="ln-old"></td><td class="ln-new">16</td><td class="sign">+</td><td>    "Discover and help secure AI activity in Copilot, agents, and other AI apps. DSPM for AI helps you track activity and keep your data safer. {0}",</td></tr>
+          <tr class="diff-ctx"><td class="ln-old">17</td><td class="ln-new">17</td><td class="sign"></td><td>  ) as string,</td></tr>
+        </table>
+      </div>
+
+      <div class="comment-meta">This comment refers to line 14 to 17 in the new file.</div>
+      <div class="comment-fk">FK readability score of suggestion: <strong>7.6</strong> (target: ≤ 8, max: &lt; 10)</div>
+      <div class="comment-source">Source: <em>naming guidelines: in-product exception</em>, <em>terminology: security language qualifiers</em></div>
+
+      <div class="rate-box">
+        Rate this: <button class="rate-btn" onclick="rateUseful(this)"><span class="thumb">👍</span> Useful</button> <button class="rate-btn" onclick="rateUseful(this)"><span class="thumb">👎</span> Not useful</button>
+        <span class="support-link">Questions: Content review support</span>
+      </div>
+
+      <div class="ai-disclaimer">⚠ AI-generated content may be incorrect.</div>
+
+      <div class="expand-skills" onclick="toggleSkills(this)">
+        <span class="skills-toggle">▸ View PR assistant info and skills</span>
+        <div class="skills-panel" style="display:none">Skill: <strong>content design review</strong> (a custom skill, configured in the repository)</div>
+      </div>
+    </div>
+    <div class="reply-bar">
+      <span class="avatar avatar-blue" style="width:24px;height:24px;font-size:10px">BB</span>
+      <div class="reply-input">Write a reply...</div>
+      <button class="resolve-btn" onclick="resolveComment(this)">Resolve</button>
+    </div>
+  </div>
+
+  <!-- Context between comments 1 & 2 -->
+  <table class="diff-table">
+    <tr class="diff-skip"><td colspan="5" style="padding:6px;text-align:center;font-size:12px">@@ -40,8 +40,8 @@</td></tr>
+    <tr class="diff-ctx"><td class="ln-old">40</td><td class="ln-new">40</td><td class="sign"></td><td>  }),</td></tr>
+    <tr class="diff-ctx"><td class="ln-old">41</td><td class="ln-new">41</td><td class="sign"></td><td></td></tr>
+    <tr class="diff-ctx"><td class="ln-old">42</td><td class="ln-new">42</td><td class="sign"></td><td>  // Dialog strings</td></tr>
+    <tr class="diff-ctx"><td class="ln-old">43</td><td class="ln-new">43</td><td class="sign"></td><td></td></tr>
+  </table>
+
+  <!-- ──── COMMENT 2 ──── -->
+  <div class="pr-comment-card" data-category="Content Design: Terminology">
+    <div class="pr-comment-inner">
+      <div class="comment-header">
+        <span class="avatar avatar-green" style="width:30px;height:30px;font-size:13px">R</span>
+        <span class="comment-author">Review bot</span>
+        <span class="comment-time">· 2h ago</span>
+        <div class="comment-actions">
+          <span>🔗</span><span>📋</span><span>▾</span>
+          <span class="resolve-check">Resolved ✓</span>
+        </div>
+      </div>
+
+      <div class="bot-label">PR assistant-Content review</div>
+
+      <div class="tag-row">
+        <span class="tag">AI Code Review</span>
+        <span class="tag">Iteration 1</span>
+        <span class="tag">Content Design: Terminology</span>
+        <span class="tag">Severity</span>
+        <span class="tag tag-sev-high">High</span>
+      </div>
+
+      <div class="comment-body">
+        <code>InfoTypesDialogDescription</code>: Four issues detected. <strong>(1)</strong> "sensitivity information types" uses the wrong term. The correct term is "sensitive info types" (Section 15, product terminology). <strong>(2)</strong> The first sentence is a fragment with no verb. Rewrite as a complete sentence. <strong>(3)</strong> "you can create": cut "you can" filler and lead with the verb (Section 5). <strong>(4)</strong> Missing period at the end of the second sentence (Section 10).
+        <br><br>Here is the suggested code:
+      </div>
+
+      <div class="suggested-change">
+        <div class="suggested-change-header">
+          <span>Suggested change</span>
+          <button class="apply-btn" onclick="applyChange(this)">Apply change</button>
+        </div>
+        <table class="diff-table">
+          <tr class="diff-ctx"><td class="ln-old">44</td><td class="ln-new">44</td><td class="sign"></td><td>  InfoTypesDialogDescription: translate(</td></tr>
+          <tr class="diff-ctx"><td class="ln-old">45</td><td class="ln-new">45</td><td class="sign"></td><td>    "InfoTypesDialogDescription" /* Dialog description */,</td></tr>
+          <tr class="diff-removed"><td class="ln-old">46</td><td class="ln-new"></td><td class="sign">−</td><td>    "Items in this site with the following sensitivity information types. To help protect the data found in this site, you can create a policy to auto-label items based on sensitive information types",</td></tr>
+          <tr class="diff-added"><td class="ln-old"></td><td class="ln-new">46</td><td class="sign">+</td><td>    "This site has items with the following sensitive info types. To help protect this data, create a policy to auto-label items based on sensitive info types.",</td></tr>
+          <tr class="diff-ctx"><td class="ln-old">47</td><td class="ln-new">47</td><td class="sign"></td><td>  ) as string,</td></tr>
+        </table>
+      </div>
+
+      <div class="comment-meta">This comment refers to line 44 to 47 in the new file.</div>
+      <div class="comment-fk">FK readability score of suggestion: <strong>9.8</strong> (target: ≤ 8, max: &lt; 10)</div>
+      <div class="comment-fk">⚠ Score may be elevated by the domain-standard term "sensitive info types," which shouldn't be simplified. Changing it would confuse customers.</div>
+      <div class="comment-source">Source: <em>product content guidelines: terminology</em>, <em>voice and tone: cut filler</em>, <em>UI copy guidelines: punctuation</em></div>
+
+      <div class="rate-box">
+        Rate this: <button class="rate-btn" onclick="rateUseful(this)"><span class="thumb">👍</span> Useful</button> <button class="rate-btn" onclick="rateUseful(this)"><span class="thumb">👎</span> Not useful</button>
+        <span class="support-link">Questions: Content review support</span>
+      </div>
+
+      <div class="ai-disclaimer">⚠ AI-generated content may be incorrect.</div>
+
+      <div class="expand-skills" onclick="toggleSkills(this)">
+        <span class="skills-toggle">▸ View PR assistant info and skills</span>
+        <div class="skills-panel" style="display:none">Skill: <strong>content design review</strong> (a custom skill, configured in the repository)</div>
+      </div>
+    </div>
+    <div class="reply-bar">
+      <span class="avatar avatar-blue" style="width:24px;height:24px;font-size:10px">BB</span>
+      <div class="reply-input">Write a reply...</div>
+      <button class="resolve-btn" onclick="resolveComment(this)">Resolve</button>
+    </div>
+  </div>
+
+  <!-- Context between comments 2 & 3 -->
+  <table class="diff-table">
+    <tr class="diff-skip"><td colspan="5" style="padding:6px;text-align:center;font-size:12px">@@ -70,8 +70,8 @@</td></tr>
+    <tr class="diff-ctx"><td class="ln-old">70</td><td class="ln-new">70</td><td class="sign"></td><td>  }),</td></tr>
+    <tr class="diff-ctx"><td class="ln-old">71</td><td class="ln-new">71</td><td class="sign"></td><td></td></tr>
+    <tr class="diff-ctx"><td class="ln-old">72</td><td class="ln-new">72</td><td class="sign"></td><td>  // Scan status messages</td></tr>
+    <tr class="diff-ctx"><td class="ln-old">73</td><td class="ln-new">73</td><td class="sign"></td><td></td></tr>
+  </table>
+
+  <!-- ──── COMMENT 3 ──── -->
+  <div class="pr-comment-card" data-category="Content Design: Error Messages">
+    <div class="pr-comment-inner">
+      <div class="comment-header">
+        <span class="avatar avatar-green" style="width:30px;height:30px;font-size:13px">R</span>
+        <span class="comment-author">Review bot</span>
+        <span class="comment-time">· 2h ago</span>
+        <div class="comment-actions">
+          <span>🔗</span><span>📋</span><span>▾</span>
+          <span class="resolve-check">Resolved ✓</span>
+        </div>
+      </div>
+
+      <div class="bot-label">PR assistant-Content review</div>
+
+      <div class="tag-row">
+        <span class="tag">AI Code Review</span>
+        <span class="tag">Iteration 1</span>
+        <span class="tag">Content Design: Error Messages</span>
+        <span class="tag">Severity</span>
+        <span class="tag tag-sev-med">Medium</span>
+      </div>
+
+      <div class="comment-body">
+        <code>ScanErrorMessage</code>: The error message violates the error formula pattern. <strong>(1)</strong> "There was" is weak filler. Be direct about what happened (Section 6). <strong>(2)</strong> "error" is technical jargon in user-facing text. Use "problem" or "something went wrong" (Section 6). <strong>(3)</strong> Missing recovery action. Every error message should tell the user what to do next (Section 6, error formula: what happened + why + what to do).
+        <br><br>Here is the suggested code:
+      </div>
+
+      <div class="suggested-change">
+        <div class="suggested-change-header">
+          <span>Suggested change</span>
+          <button class="apply-btn" onclick="applyChange(this)">Apply change</button>
+        </div>
+        <table class="diff-table">
+          <tr class="diff-ctx"><td class="ln-old">74</td><td class="ln-new">74</td><td class="sign"></td><td>  ScanErrorMessage: translate(</td></tr>
+          <tr class="diff-ctx"><td class="ln-old">75</td><td class="ln-new">75</td><td class="sign"></td><td>    "ScanErrorMessage" /* Scan error message */,</td></tr>
+          <tr class="diff-removed"><td class="ln-old">76</td><td class="ln-new"></td><td class="sign">−</td><td>    "There was an error with your scan.",</td></tr>
+          <tr class="diff-added"><td class="ln-old"></td><td class="ln-new">76</td><td class="sign">+</td><td>    "Something went wrong with your scan. Try again, or check back later.",</td></tr>
+          <tr class="diff-ctx"><td class="ln-old">77</td><td class="ln-new">77</td><td class="sign"></td><td>  ) as string,</td></tr>
+        </table>
+      </div>
+
+      <div class="comment-meta">This comment refers to line 74 to 77 in the new file.</div>
+      <div class="comment-fk">FK readability score of suggestion: <strong>2.5</strong> (target: ≤ 8, max: &lt; 10)</div>
+      <div class="comment-source">Source: <em>error message guidelines: terminology, error formula</em></div>
+
+      <div class="rate-box">
+        Rate this: <button class="rate-btn" onclick="rateUseful(this)"><span class="thumb">👍</span> Useful</button> <button class="rate-btn" onclick="rateUseful(this)"><span class="thumb">👎</span> Not useful</button>
+        <span class="support-link">Questions: Content review support</span>
+      </div>
+
+      <div class="ai-disclaimer">⚠ AI-generated content may be incorrect.</div>
+
+      <div class="expand-skills" onclick="toggleSkills(this)">
+        <span class="skills-toggle">▸ View PR assistant info and skills</span>
+        <div class="skills-panel" style="display:none">Skill: <strong>content design review</strong> (a custom skill, configured in the repository)</div>
+      </div>
+    </div>
+    <div class="reply-bar">
+      <span class="avatar avatar-blue" style="width:24px;height:24px;font-size:10px">BB</span>
+      <div class="reply-input">Write a reply...</div>
+      <button class="resolve-btn" onclick="resolveComment(this)">Resolve</button>
+    </div>
+  </div>
+
+  <!-- Context between comments 3 & 4 -->
+  <table class="diff-table">
+    <tr class="diff-skip"><td colspan="5" style="padding:6px;text-align:center;font-size:12px">@@ -100,8 +100,8 @@</td></tr>
+    <tr class="diff-ctx"><td class="ln-old">100</td><td class="ln-new">100</td><td class="sign"></td><td>  }),</td></tr>
+    <tr class="diff-ctx"><td class="ln-old">101</td><td class="ln-new">101</td><td class="sign"></td><td></td></tr>
+    <tr class="diff-ctx"><td class="ln-old">102</td><td class="ln-new">102</td><td class="sign"></td><td>  // Confirmation dialogs</td></tr>
+    <tr class="diff-ctx"><td class="ln-old">103</td><td class="ln-new">103</td><td class="sign"></td><td></td></tr>
+  </table>
+
+  <!-- ──── COMMENT 4 ──── -->
+  <div class="margin-note">No score here: the analyzer only grades strings of 4 words or more.</div>
+  <div class="pr-comment-card" data-category="Content Design: Capitalization">
+    <div class="pr-comment-inner">
+      <div class="comment-header">
+        <span class="avatar avatar-green" style="width:30px;height:30px;font-size:13px">R</span>
+        <span class="comment-author">Review bot</span>
+        <span class="comment-time">· 2h ago</span>
+        <div class="comment-actions">
+          <span>🔗</span><span>📋</span><span>▾</span>
+          <span class="resolve-check">Resolved ✓</span>
+        </div>
+      </div>
+
+      <div class="bot-label">PR assistant-Content review</div>
+
+      <div class="tag-row">
+        <span class="tag">AI Code Review</span>
+        <span class="tag">Iteration 1</span>
+        <span class="tag">Content Design: Capitalization</span>
+        <span class="tag">Severity</span>
+        <span class="tag tag-sev-low">Low</span>
+      </div>
+
+      <div class="comment-body">
+        <code>ConfirmDialogTitle</code>: "Confirm Action" uses title-style capitalization. Microsoft Security UI strings use sentence-style capitalization. Only capitalize the first word and proper nouns (Section 1). "Action" is not a proper noun.
+        <br><br>Here is the suggested code:
+      </div>
+
+      <div class="suggested-change">
+        <div class="suggested-change-header">
+          <span>Suggested change</span>
+          <button class="apply-btn" onclick="applyChange(this)">Apply change</button>
+        </div>
+        <table class="diff-table">
+          <tr class="diff-ctx"><td class="ln-old">104</td><td class="ln-new">104</td><td class="sign"></td><td>  ConfirmDialogTitle: translate(</td></tr>
+          <tr class="diff-ctx"><td class="ln-old">105</td><td class="ln-new">105</td><td class="sign"></td><td>    "ConfirmDialogTitle" /* Dialog title */,</td></tr>
+          <tr class="diff-removed"><td class="ln-old">106</td><td class="ln-new"></td><td class="sign">−</td><td>    "Confirm Action",</td></tr>
+          <tr class="diff-added"><td class="ln-old"></td><td class="ln-new">106</td><td class="sign">+</td><td>    "Confirm action",</td></tr>
+          <tr class="diff-ctx"><td class="ln-old">107</td><td class="ln-new">107</td><td class="sign"></td><td>  ) as string,</td></tr>
+        </table>
+      </div>
+
+      <div class="comment-meta">This comment refers to line 104 to 107 in the new file.</div>
+      <div class="comment-source">Source: <em>naming guidelines: capitalization standards</em></div>
+
+      <div class="rate-box">
+        Rate this: <button class="rate-btn" onclick="rateUseful(this)"><span class="thumb">👍</span> Useful</button> <button class="rate-btn" onclick="rateUseful(this)"><span class="thumb">👎</span> Not useful</button>
+        <span class="support-link">Questions: Content review support</span>
+      </div>
+
+      <div class="ai-disclaimer">⚠ AI-generated content may be incorrect.</div>
+
+      <div class="expand-skills" onclick="toggleSkills(this)">
+        <span class="skills-toggle">▸ View PR assistant info and skills</span>
+        <div class="skills-panel" style="display:none">Skill: <strong>content design review</strong> (a custom skill, configured in the repository)</div>
+      </div>
+    </div>
+    <div class="reply-bar">
+      <span class="avatar avatar-blue" style="width:24px;height:24px;font-size:10px">BB</span>
+      <div class="reply-input">Write a reply...</div>
+      <button class="resolve-btn" onclick="resolveComment(this)">Resolve</button>
+    </div>
+  </div>
+
+  <!-- Trailing context -->
+  <table class="diff-table">
+    <tr class="diff-ctx"><td class="ln-old">108</td><td class="ln-new">108</td><td class="sign"></td><td></td></tr>
+    <tr class="diff-ctx"><td class="ln-old">109</td><td class="ln-new">109</td><td class="sign"></td><td>  // End of strings</td></tr>
+    <tr class="diff-ctx"><td class="ln-old">110</td><td class="ln-new">110</td><td class="sign"></td><td>};</td></tr>
+  </table>
+</div>
+
+</div><!-- /page-wrap -->
+
+<div class="watermark">DEMO</div>
+
+<script>
+function applyChange(btn) {
+  if (btn.disabled) return;
+
+  var suggestedChange = btn.closest('.suggested-change');
+  var table = suggestedChange.querySelector('.diff-table');
+  var removedRows = table.querySelectorAll('tr.diff-removed');
+  var addedRows = table.querySelectorAll('tr.diff-added');
+
+  // Animate removed rows out
+  removedRows.forEach(function(row) {
+    row.style.transition = 'opacity .3s ease, max-height .3s ease, background .3s ease';
+    row.style.opacity = '0';
+    row.style.maxHeight = '0';
+    row.style.overflow = 'hidden';
+    setTimeout(function() {
+      row.style.display = 'none';
+    }, 300);
+  });
+
+  // Transform added rows to neutral context rows
+  addedRows.forEach(function(row) {
+    row.style.transition = 'background .3s ease';
+    setTimeout(function() {
+      row.classList.remove('diff-added');
+      row.classList.add('diff-ctx');
+      row.style.background = '#fff';
+
+      // Update sign cell
+      var signCell = row.querySelector('.sign');
+      if (signCell) {
+        signCell.textContent = '';
+        signCell.style.color = '';
+      }
+
+      // Fix line numbers: fill in the old line number
+      var lnOld = row.querySelector('.ln-old');
+      var lnNew = row.querySelector('.ln-new');
+      if (lnOld && lnNew && lnNew.textContent.trim()) {
+        lnOld.textContent = lnNew.textContent;
+      }
+    }, 50);
+  });
+
+  // Update button
+  btn.disabled = true;
+  btn.classList.add('applied');
+  btn.textContent = '✓ Change applied';
+}
+
+function resolveComment(btn) {
+  var card = btn.closest('.pr-comment-card');
+  var category = card.getAttribute('data-category') || 'Content Design';
+
+  // Capture current height for smooth collapse
+  var currentHeight = card.offsetHeight;
+  card.style.height = currentHeight + 'px';
+  card.style.overflow = 'hidden';
+
+  // Force reflow
+  card.offsetHeight;
+
+  // Create the collapsed bar
+  var bar = document.createElement('div');
+  bar.className = 'resolved-bar';
+  bar.innerHTML =
+    '<span class="avatar avatar-green" style="width:24px;height:24px;font-size:10px">R</span>' +
+    '<span style="font-weight:600;font-size:13px;color:#333">Review bot</span>' +
+    '<span style="color:#999;font-size:12px">· PR assistant-Content review: ' + category + '</span>' +
+    '<span class="resolved-text">Resolved ✓</span>';
+
+  // Animate collapse
+  card.style.transition = 'height .35s ease, opacity .35s ease';
+  card.style.height = '0px';
+  card.style.opacity = '0';
+
+  setTimeout(function() {
+    card.parentNode.insertBefore(bar, card);
+    card.parentNode.removeChild(card);
+  }, 360);
+}
+
+function rateUseful(btn) {
+  // Deselect sibling
+  var siblings = btn.parentNode.querySelectorAll('.rate-btn');
+  siblings.forEach(function(s) { s.classList.remove('selected'); });
+
+  // Select this one
+  btn.classList.add('selected');
+}
+
+function toggleSkills(el) {
+  var panel = el.querySelector('.skills-panel');
+  var toggle = el.querySelector('.skills-toggle');
+  if (panel.style.display === 'none') {
+    panel.style.display = 'block';
+    toggle.textContent = '▾ View PR assistant info and skills';
+  } else {
+    panel.style.display = 'none';
+    toggle.textContent = '▸ View PR assistant info and skills';
+  }
+}
+</script>
+
+</body>
+</html>

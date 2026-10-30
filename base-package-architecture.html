@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>How the Security Content Design Base Package Works</title>
+<style>
+:root {
+  --primary: #0078D4;
+  --primary-dark: #005A9E;
+  --primary-light: #DEECF9;
+  --green: #107C10;
+  --green-light: #DFF6DD;
+  --orange: #CA5010;
+  --orange-light: #FFF4CE;
+  --purple: #5C2D91;
+  --purple-light: #F0E6FA;
+  --pink: #E3008C;
+  --pink-light: #FCE4EC;
+  --gray-bg: #F5F5F5;
+  --gray-border: #E0E0E0;
+  --text: #242424;
+  --subtext: #424242;
+  --muted: #707070;
+  --white: #FFFFFF;
+  --shadow: 0 2px 8px rgba(0,0,0,0.08);
+  --shadow-hover: 0 4px 16px rgba(0,0,0,0.12);
+  --radius: 8px;
+  --transition: all 0.2s ease;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: 'Segoe UI', -apple-system, sans-serif; background: var(--gray-bg); color: var(--text); line-height: 1.6; }
+
+/* HERO */
+.hero {
+  background: linear-gradient(135deg, #0F1B2D 0%, #1B3A5C 30%, #0078D4 60%, #50E6FF 100%);
+  padding: 48px 40px;
+  color: white;
+  position: relative;
+  overflow: hidden;
+}
+.hero::after {
+  content: '';
+  position: absolute;
+  top: 0; right: 0; bottom: 0; left: 0;
+  background: radial-gradient(ellipse at 80% 20%, rgba(80,230,255,0.15), transparent 60%);
+}
+.hero h1 { font-size: 28px; font-weight: 600; position: relative; z-index: 1; }
+.hero p { font-size: 15px; opacity: 0.85; margin-top: 8px; max-width: 700px; position: relative; z-index: 1; }
+.hero .meta { font-size: 12px; opacity: 0.6; margin-top: 16px; position: relative; z-index: 1; }
+
+/* NAV TABS */
+.tab-nav {
+  position: sticky; top: 0; z-index: 100;
+  background: var(--white);
+  border-bottom: 1px solid var(--gray-border);
+  display: flex; gap: 0;
+  padding: 0 40px;
+  box-shadow: var(--shadow);
+}
+.tab-btn {
+  padding: 14px 20px;
+  border: none; background: none;
+  font-size: 14px; font-weight: 500;
+  color: var(--muted);
+  cursor: pointer;
+  border-bottom: 3px solid transparent;
+  transition: var(--transition);
+}
+.tab-btn:hover { color: var(--primary); }
+.tab-btn.active { color: var(--primary); border-bottom-color: var(--primary); font-weight: 600; }
+
+/* CONTENT */
+.content { max-width: 1100px; margin: 0 auto; padding: 32px 40px; }
+.tab-panel { display: none; }
+.tab-panel.active { display: block; }
+
+/* CARDS */
+.card {
+  background: var(--white);
+  border: 1px solid var(--gray-border);
+  border-radius: var(--radius);
+  padding: 24px;
+  margin-bottom: 16px;
+  box-shadow: var(--shadow);
+  transition: var(--transition);
+}
+.card:hover { box-shadow: var(--shadow-hover); transform: translateY(-1px); }
+.card h3 { font-size: 16px; margin-bottom: 8px; color: var(--text); }
+.card p { font-size: 14px; color: var(--subtext); }
+.card .plain { font-size: 13px; color: var(--muted); font-style: italic; margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--gray-border); }
+
+/* SECTION HEADERS */
+.section-header { margin: 32px 0 16px; }
+.section-header h2 { font-size: 20px; color: var(--text); }
+.section-header p { font-size: 13px; color: var(--muted); }
+
+/* GROUP LABELS */
+.group-label {
+  font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;
+  color: var(--primary); margin: 24px 0 12px; padding-left: 4px;
+}
+
+/* TERM CARDS - color coded */
+.card.package { border-left: 4px solid var(--primary); }
+.card.plumbing { border-left: 4px solid var(--green); }
+.card.infra { border-left: 4px solid var(--purple); }
+
+/* WORKFLOW STEPS */
+.workflow-step {
+  display: flex; gap: 16px; align-items: flex-start;
+  background: var(--white);
+  border: 1px solid var(--gray-border);
+  border-radius: var(--radius);
+  padding: 20px 24px;
+  margin-bottom: 12px;
+  box-shadow: var(--shadow);
+  transition: var(--transition);
+}
+.workflow-step:hover { box-shadow: var(--shadow-hover); border-color: var(--primary); }
+.step-num {
+  min-width: 36px; height: 36px;
+  background: var(--primary); color: white;
+  border-radius: 50%; display: flex; align-items: center; justify-content: center;
+  font-weight: 700; font-size: 14px; flex-shrink: 0;
+}
+.step-num.setup { background: var(--orange); }
+.step-content h4 { font-size: 15px; margin-bottom: 4px; }
+.step-content p { font-size: 13px; color: var(--subtext); }
+.step-content .example { font-size: 12px; color: var(--muted); margin-top: 6px; font-style: italic; }
+.step-arrow { text-align: center; color: var(--muted); font-size: 18px; margin: 4px 0; padding-left: 18px; }
+
+/* TWO-COL */
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.col-card {
+  background: var(--white); border-radius: var(--radius);
+  border: 2px solid var(--gray-border); padding: 20px;
+}
+.col-card.non-ai { border-color: var(--primary); }
+.col-card.ai { border-color: var(--orange); }
+.col-card h3 { font-size: 15px; margin-bottom: 4px; }
+.col-card .subtitle { font-size: 12px; color: var(--muted); margin-bottom: 12px; }
+.col-card ul { list-style: none; padding: 0; }
+.col-card li { font-size: 13px; color: var(--subtext); padding: 3px 0; }
+.col-card li::before { content: '•'; color: var(--primary); margin-right: 8px; }
+.col-card.ai li::before { color: var(--orange); }
+.col-card .note { font-size: 12px; color: var(--muted); margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--gray-border); font-style: italic; }
+
+/* CONFUSION CARDS */
+.confusion-card {
+  background: #FFFDE7; border: 1px solid #FBC02D; border-radius: var(--radius);
+  padding: 16px 20px; margin-bottom: 10px;
+}
+.confusion-card h4 { font-size: 14px; color: var(--text); margin-bottom: 6px; }
+.confusion-card p { font-size: 13px; color: var(--subtext); margin-bottom: 4px; }
+.confusion-card .resolution { font-size: 12px; color: var(--muted); }
+
+/* ACCORDION */
+.accordion { margin-bottom: 8px; }
+.accordion-header {
+  background: var(--white); border: 1px solid var(--gray-border); border-radius: var(--radius);
+  padding: 14px 20px; cursor: pointer; display: flex; justify-content: space-between; align-items: center;
+  transition: var(--transition);
+}
+.accordion-header:hover { background: var(--primary-light); }
+.accordion-header h4 { font-size: 14px; }
+.accordion-chevron { transition: transform 0.2s; font-size: 12px; }
+.accordion.open .accordion-chevron { transform: rotate(180deg); }
+.accordion-body {
+  display: none; padding: 16px 20px; background: var(--white);
+  border: 1px solid var(--gray-border); border-top: none;
+  border-radius: 0 0 var(--radius) var(--radius);
+  font-size: 13px; color: var(--subtext);
+}
+.accordion.open .accordion-body { display: block; }
+
+/* EXAMPLES GRID */
+.examples-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-top: 16px; }
+.example-card { background: var(--gray-bg); border-radius: 6px; padding: 14px; font-size: 13px; }
+.example-card .name { font-weight: 600; font-size: 12px; color: var(--primary); margin-bottom: 4px; }
+
+@media (max-width: 768px) {
+  .two-col { grid-template-columns: 1fr; }
+  .examples-grid { grid-template-columns: 1fr; }
+  .content { padding: 20px; }
+  .hero { padding: 32px 20px; }
+  .tab-nav { padding: 0 16px; overflow-x: auto; }
+}
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <h1>How the Security Content Design Base Package Works</h1>
+  <p>A complete guide to how our content guidelines get from our repo into the AI tools that partners use every day. If you're new to this system, start with the Glossary tab, then follow the Workflow.</p>
+  <div class="meta">Security Content Design Team • Last updated: June 2026 • Sources: Team architecture discussions, MCP knowledge base plan</div>
+</div>
+
+<nav class="tab-nav">
+  <button class="tab-btn active" onclick="showTab('overview')">Overview</button>
+  <button class="tab-btn" onclick="showTab('glossary')">Glossary</button>
+  <button class="tab-btn" onclick="showTab('workflow')">Workflow</button>
+  <button class="tab-btn" onclick="showTab('package')">Package contents</button>
+  <button class="tab-btn" onclick="showTab('confusion')">Common confusion</button>
+</nav>
+
+<div class="content">
+
+<!-- OVERVIEW TAB -->
+<div id="overview" class="tab-panel active">
+  <div class="section-header">
+    <h2>What is the base package?</h2>
+    <p>A quick orientation for newcomers</p>
+  </div>
+  
+  <div class="card">
+    <h3>The short version</h3>
+    <p>The <strong>base package</strong> is a collection of markdown files in a GitHub repo. These files contain content guidelines (rules, patterns, terminology, and examples) that AI tools use to help people write great UI content for Microsoft Security products.</p>
+    <p style="margin-top: 12px">Think of it as a reference library that AI tools consult. When a content designer asks an AI tool to "write an error message for Sentinel," the tool checks our guidelines to make sure the output follows Microsoft voice, uses the right terms, meets accessibility standards, and matches the security tone.</p>
+  </div>
+
+  <div class="section-header">
+    <h2>Who's involved?</h2>
+  </div>
+  
+  <div class="examples-grid">
+    <div class="example-card">
+      <div class="name">Our team (authors)</div>
+      We write and maintain the guideline files. We decide what the rules are, keep them current, and ensure they align with Microsoft style guides.
+    </div>
+    <div class="example-card">
+      <div class="name">Tool builders (integrators)</div>
+      Engineers, UX designers, and content designers who build the skills, agents, and plugins that CONNECT to our guidelines. They wire the plumbing so AI tools can find our files.
+    </div>
+    <div class="example-card">
+      <div class="name">Users</div>
+      Any partner who uses AI tools (GitHub Copilot CLI, GitHub Copilot, Figma, etc.) and benefits from our guidelines without needing to know how the system works.
+    </div>
+  </div>
+
+  <div class="section-header">
+    <h2>Real-world examples</h2>
+    <p>Tools already using our base package</p>
+  </div>
+
+  <div class="examples-grid">
+    <div class="example-card">
+      <div class="name">Figma plugin</div>
+      A Figma plugin built by a security UX designer. Pulls live rules from our repo's package folder. Helps designers write UI strings directly in Figma.
+    </div>
+    <div class="example-card">
+      <div class="name">PR assistant tool</div>
+      Reviews UI string changes in pull requests. Uses our guidelines to flag terminology issues, voice/tone mismatches, and accessibility problems.
+    </div>
+    <div class="example-card">
+      <div class="name">GitHub Copilot CLI / GitHub Copilot</div>
+      When used in our repo, automatically loads the guidelines via the design-system MCP server or direct file access. Helps with content reviews and string generation.
+    </div>
+  </div>
+</div>
+
+<!-- GLOSSARY TAB -->
+<div id="glossary" class="tab-panel">
+  <div class="section-header">
+    <h2>Glossary</h2>
+    <p>Every term in the system, explained in plain language.</p>
+  </div>
+
+  <div class="group-label">📦 The package (what we deliver)</div>
+  
+  <div class="card package">
+    <h3>Base package</h3>
+    <p>The complete set of content guidelines we deliver. A collection of markdown (.md) files stored in a GitHub repo. Contains both general and AI-specific guideline files.</p>
+    <div class="plain">Think of it as a reference library that AI tools consult when writing UI content.</div>
+  </div>
+  <div class="card package">
+    <h3>General guidelines</h3>
+    <p>General guidelines that apply to ALL UI content regardless of whether AI is involved. Covers: voice & tone, terminology, naming, UI copy, accessibility, localization, marketing messaging, and more.</p>
+    <div class="plain">These are the "always loaded" default layer. Every request starts here.</div>
+  </div>
+  <div class="card package">
+    <h3>AI files</h3>
+    <p>Guidelines that apply ONLY when the UI involves AI, Copilot, or agents. Covers: AI tone adaptations, agent naming, responsible AI guardrails, failure patterns, agent UX, and more.</p>
+    <div class="plain">Self-contained: everything needed for AI content in one place. Loaded on demand, not for every request.</div>
+  </div>
+  <div class="card package">
+    <h3>Frontmatter</h3>
+    <p>A small metadata block at the top of each .md file written in YAML format (between --- markers). Contains: title, type, tags, version, scope.</p>
+    <div class="plain">Helps tools identify what a file is about and whether it's relevant to the current task.</div>
+  </div>
+
+  <div class="group-label">⚙️ The plumbing (how guidelines get delivered)</div>
+  
+  <div class="card plumbing">
+    <h3>Skill</h3>
+    <p>A small file (SKILL.md) that defines one capability, like "UI Writing" or "Terminology Vetting." It doesn't contain guidelines itself; it tells the system which guidelines to fetch for that task.</p>
+    <div class="plain">Like a recipe card that lists ingredients to gather, not the ingredients themselves.</div>
+  </div>
+  <div class="card plumbing">
+    <h3>Loader</h3>
+    <p>The engine that fetches the right guideline files. Takes a request like "I need voice & tone guidelines for Sentinel," reads the manifest, and returns the matching files. It's a simple fetch script: no merging logic, no priority decisions.</p>
+    <div class="plain">Like a librarian who pulls the requested books off the shelf. They don't decide which book is more important: that's the skill's job.</div>
+  </div>
+  <div class="card plumbing">
+    <h3>Orchestrator</h3>
+    <p>The traffic cop that receives a request and decides which skill to activate. When someone asks "write me an error message," the orchestrator routes to the UI Writing skill.</p>
+    <div class="plain">It picks the right workflow. The skill then tells the loader what to fetch.</div>
+  </div>
+  <div class="card plumbing">
+    <h3>Package index (manifest.yaml)</h3>
+    <p>A per-folder table-of-contents file. Lists what guideline files that folder contains, their categories (terminology, voice-tone, etc.), and routing rules. The loader reads these to find files without scanning the whole repo.</p>
+    <div class="plain">Not an agent manifest. It's just a table of contents for each folder.</div>
+  </div>
+  <div class="card plumbing">
+    <h3>Precedence chain</h3>
+    <p>The rule for which guidelines "win" when multiple layers have overlapping content: <strong>Subarea &gt; Area &gt; Horizontal &gt; Base</strong>. Most specific wins.</p>
+    <div class="plain">If Sentinel defines "alert" differently than Base, Sentinel's definition wins for Sentinel tasks.</div>
+  </div>
+  <div class="card plumbing">
+    <h3>Cross-reference trigger</h3>
+    <p>A note in the general guidelines that says: "If this task involves AI/Copilot/agents, also load the AI files." This is how AI guidelines get pulled in without being loaded for every single request.</p>
+    <div class="plain">Like a library cross-reference card: "See also: AI section."</div>
+  </div>
+
+  <div class="group-label">🌐 The infrastructure (how AI tools connect)</div>
+  
+  <div class="card infra">
+    <h3>MCP (Model Context Protocol)</h3>
+    <p>A standard that lets AI tools ask external servers for information at runtime. Any AI tool with MCP support can connect to any MCP server: it's a universal adapter.</p>
+    <div class="plain">The universal plug that connects AI tools to knowledge sources like ours.</div>
+  </div>
+  <div class="card infra">
+    <h3>Design-system MCP server</h3>
+    <p>The specific MCP server that indexes .md files from repos across Microsoft. Our guidelines have their own knowledge base there.</p>
+    <div class="plain">The main highway most AI tools use to reach our guidelines today.</div>
+  </div>
+  <div class="card infra">
+    <h3>YAML frontmatter</h3>
+    <p>Structured metadata at the top of each .md file (between <code>---</code> markers). Contains fields like title, type, tags, and scope. Parsers read this to build searchable indexes without opening the full file.</p>
+    <div class="plain">Like a library catalog card stapled to the front of a book. Tools scan these to know what's inside without reading the whole thing.</div>
+  </div>
+  <div class="card infra">
+    <h3>Parser</h3>
+    <p>The component inside the design-system MCP server that reads files and builds a searchable database. Optimized for .md files. Ignores .yaml if no .md version exists.</p>
+    <div class="plain">This is THE technical reason we convert everything to markdown. The Parser can't read YAML.</div>
+  </div>
+  <div class="card infra">
+    <h3>MCP index</h3>
+    <p>The searchable database the Parser builds after reading our .md files. We don't create this: it's built automatically when the Parser processes our repo.</p>
+    <div class="plain">Different from our Package Index. This one is auto-generated; ours is hand-authored.</div>
+  </div>
+  <div class="card infra">
+    <h3>AI tools (consumers)</h3>
+    <p>The tools partners use that consume our guidelines: GitHub Copilot CLI, GitHub Copilot, VS Code Copilot, PR assistant tool, Figma plugin, M365 Copilot, custom agents.</p>
+    <div class="plain">These are the "customers" of our base package. We write guidelines; they use them.</div>
+  </div>
+</div>
+
+<!-- WORKFLOW TAB -->
+<div id="workflow" class="tab-panel">
+  <div class="section-header">
+    <h2>End-to-end workflow</h2>
+    <p>How guidelines go from our repo to the partner's screen. Two phases: setup (one-time) and usage (repeatable).</p>
+  </div>
+
+  <div class="group-label">🔧 Phase 1: Setup (one-time, someone builds the connection)</div>
+  <p style="font-size:13px; color: var(--muted); margin-bottom: 16px;">Before any partner can get AI-assisted content, someone needs to build the tool or connection that hooks into our base package. This happens once per tool, not per request.</p>
+
+  <div class="workflow-step" style="border-left: 4px solid var(--orange);">
+    <div class="step-num setup">0</div>
+    <div class="step-content">
+      <h4>A tool builder creates a connection to our package</h4>
+      <p>Someone on our team or a partner team builds a skill, agent, plugin, or tool configuration that points to our base package files. This is the prerequisite: without it, AI tools have no context into our guidelines.</p>
+      <div class="example">
+        Examples already built:<br>
+        • <strong>Figma plugin</strong>: built by a security UX designer, pointing to our package folder<br>
+        • <strong>PR assistant tool</strong>: pull request tool using our content skill to provide revisions for string check-ins<br>
+        • <strong>GitHub Copilot CLI skills</strong>: SKILL.md files, built for our solution partner teams, that call the loader to fetch guidelines on demand<br>
+        • <strong>Agent 365 messaging skill</strong>: Decision framework for in-product Agent 365 messaging in Microsoft Security portals
+      </div>
+    </div>
+  </div>
+
+  <div class="step-arrow">↓</div>
+
+  <div class="group-label">🔄 Phase 2: Usage (repeatable, user gets help)</div>
+  <p style="font-size:13px; color: var(--muted); margin-bottom: 16px;">Once a connection exists, partners can use it repeatedly. Here's what happens each time.</p>
+
+  <div class="workflow-step">
+    <div class="step-num">1</div>
+    <div class="step-content">
+      <h4>User makes a request</h4>
+      <p>Someone uses a connected AI tool and asks for help with UI content.</p>
+      <div class="example">Example: "Write an error message for when a Sentinel data connector fails to authenticate."</div>
+    </div>
+  </div>
+  <div class="step-arrow">↓</div>
+
+  <div class="workflow-step">
+    <div class="step-num">2</div>
+    <div class="step-content">
+      <h4>AI tool accesses our guidelines</h4>
+      <p>The tool connects to our base package through one of the established paths:</p>
+      <div class="example">
+        Path A: <strong>Design-system MCP server</strong>, Parser has already indexed our .md files; tool queries the knowledge base<br>
+        Path B: <strong>Direct repo read</strong>, GitHub Copilot reads .md files directly from the repo<br>
+        Path C: <strong>Our MCP server</strong> (future), Loader resolves files and returns merged content
+      </div>
+    </div>
+  </div>
+  <div class="step-arrow">↓</div>
+
+  <div class="workflow-step">
+    <div class="step-num">3</div>
+    <div class="step-content">
+      <h4>Orchestrator routes to the right skill</h4>
+      <p>Based on what the user asked, the system activates the appropriate capability:</p>
+      <div class="example">→ UI Writing (generate strings) | → Terminology Vetting (check terms) | → Content Evaluation (review quality) | → Readability Analysis (check grade level)</div>
+    </div>
+  </div>
+  <div class="step-arrow">↓</div>
+
+  <div class="workflow-step">
+    <div class="step-num">4</div>
+    <div class="step-content">
+      <h4>The skill calls the loader</h4>
+      <p>The skill says: "I need guidelines for area=sentinel, subarea=graph, workflow=ux-writing." The loader reads Package Index/manifest files to determine which .md files are relevant.</p>
+    </div>
+  </div>
+  <div class="step-arrow">↓</div>
+
+  <div class="workflow-step">
+    <div class="step-num">5</div>
+    <div class="step-content">
+      <h4>Loader fetches and delivers files</h4>
+      <p>The loader reads the manifest and returns matching .md files. It's a simple fetch: no logic, no filtering, no decisions about priority.</p>
+      <div class="example">
+        Loader reads manifest → finds relevant files for the requested area/subarea/workflow → returns them all to the skill.
+      </div>
+    </div>
+  </div>
+  <div class="step-arrow">↓</div>
+
+  <div class="workflow-step">
+    <div class="step-num">6</div>
+    <div class="step-content">
+      <h4>Skill/LLM agent applies precedence</h4>
+      <p>The skill (or the LLM agent itself) layers files by specificity. Most specific wins when there's overlap:</p>
+      <div class="example">
+        BASE (always) → HORIZONTAL (if AI context, via cross-reference trigger) → AREA (product) → SUBAREA (most specific)<br>
+        Example: Sentinel/Graph terminology overrides Base terminology for Graph-specific terms.
+      </div>
+    </div>
+  </div>
+  <div class="step-arrow">↓</div>
+
+  <div class="workflow-step">
+    <div class="step-num">7</div>
+    <div class="step-content">
+      <h4>AI tool applies the guidelines</h4>
+      <p>The tool uses the merged guidelines to generate or review the content. It validates:</p>
+      <div class="example">✓ Readability (Flesch-Kincaid < grade 10) | ✓ Correct terminology | ✓ Voice and tone | ✓ Accessibility | ✓ No conflicts</div>
+    </div>
+  </div>
+  <div class="step-arrow">↓</div>
+
+  <div class="workflow-step">
+    <div class="step-num">8</div>
+    <div class="step-content">
+      <h4>User receives trustworthy output</h4>
+      <p>The user gets polished, on-brand UI content they can trust. Output includes generated strings (with tone variants), terminology validation, readability scores, and improvement suggestions.</p>
+    </div>
+  </div>
+</div>
+
+<!-- PACKAGE CONTENTS TAB -->
+<div id="package" class="tab-panel">
+  <div class="section-header">
+    <h2>What's in the package</h2>
+    <p>Two file sets, one deliverable. The base package contains both: they're organized separately so AI tools only load what's relevant.</p>
+  </div>
+
+  <div class="two-col">
+    <div class="col-card non-ai">
+      <h3>📄 General guidelines</h3>
+      <div class="subtitle">These files load for EVERY request (the default layer)</div>
+      <ul>
+        <li>Voice & tone (Microsoft's 3 voice principles)</li>
+        <li>Security voice & tone (how our admin audience differs from standard voice guidance)</li>
+        <li>Microsoft terminology (approved terms, definitions, usage)</li>
+        <li>Internal security terms (~300 team-curated terms and definitions)</li>
+        <li>External security terms (industry-standard terms from NIST, CISA, MITRE, and similar sources)</li>
+        <li>Naming guidelines (product and feature names)</li>
+        <li>UI copy guidelines (patterns, do/don't, examples)</li>
+        <li>Error messages (core principles, structure, best practices, UI placement)</li>
+        <li>Navigation labels (information architecture, tooltips, portal-specific guidance)</li>
+        <li>Fluent component guidelines (content guidance for the components used in security UX)</li>
+        <li>Content patterns (wizards, empty states, first-run experiences)</li>
+        <li>Accessibility (screen readers, alt text, WCAG)</li>
+        <li>Localization (string length, placeholders, global readiness)</li>
+        <li>Marketing messaging (legal review rules, claims)</li>
+        <li>Compliance standards & regulations (GDPR, HIPAA, financial and legal requirements)</li>
+        <li>Secure by Design UX patterns (consent, permissions, data handling, security settings)</li>
+        <li>UI tenets & traps (principles, patterns, do/don't examples)</li>
+        <li>Security content design heuristics (rules, product-specific guidance)</li>
+        <li>Security admin personas (core mindsets, pain points, portal-specific best practices)</li>
+      </ul>
+      <div class="note">These files include cross-reference triggers: "If this UI involves AI, Copilot, or agents, also load the AI files for guidance."</div>
+    </div>
+    <div class="col-card ai">
+      <h3>🤖 AI guidelines</h3>
+      <div class="subtitle">These files load ONLY when UI involves AI/Copilot/agents</div>
+      <ul>
+        <li>AI voice & tone (how tone adapts in AI contexts)</li>
+        <li>AI terminology (AI and agent terms, definitions, terms to avoid)</li>
+        <li>AI naming (how to name agents and AI features)</li>
+        <li>Responsible AI content (guardrails, hedging, human oversight)</li>
+        <li>Failure taxonomy (AI error patterns, trust design)</li>
+        <li>Agent UX patterns (discovery, setup, output flows)</li>
+        <li>Anti-anthropomorphism (don't humanize AI)</li>
+        <li>Anti-sycophancy (don't flatter or over-apologize)</li>
+      </ul>
+      <div class="note">Self-contained: everything needed for AI UI content lives here. Loaded via horizontal opt-in (area manifest declares it) or cross-reference trigger from the general guidelines.</div>
+    </div>
+  </div>
+
+  <div class="section-header" style="margin-top: 32px;">
+    <h2>How the layers work together</h2>
+  </div>
+
+  <div class="card">
+    <h3>Precedence: most specific wins</h3>
+    <p>When multiple layers define the same thing (like a term or a voice rule), the most specific layer wins:</p>
+    <div style="margin-top: 12px; padding: 16px; background: var(--gray-bg); border-radius: 6px; font-size: 14px;">
+      <strong style="color: var(--primary);">SUBAREA</strong> (Sentinel/Graph) overrides →
+      <strong style="color: var(--green);">AREA</strong> (Sentinel) overrides →
+      <strong style="color: var(--purple);">HORIZONTAL</strong> (AI/Agents) overrides →
+      <strong style="color: var(--muted);">BASE</strong> (general guidelines)
+    </div>
+    <p style="margin-top: 12px; font-size: 13px; color: var(--muted);">Example: If Base says "use 'notification'" but Sentinel says "use 'alert'" for the same concept, then Sentinel's term wins for Sentinel-related tasks.</p>
+  </div>
+</div>
+
+<!-- CONFUSION TAB -->
+<div id="confusion" class="tab-panel">
+  <div class="section-header">
+    <h2>Common confusion</h2>
+    <p>Terms that sound similar but mean different things. This is a quick reference for when conversations get tangled.</p>
+  </div>
+
+  <div class="confusion-card">
+    <h4>⚠️ "Manifest" vs "Package index"</h4>
+    <p><strong>Industry definition:</strong> Manifest = a JSON config file that defines an AI agent's behavior and capabilities. Created by an agent developer.</p>
+    <p><strong>Our usage:</strong> Package index (manifest.yaml) = a per-folder table of contents listing guideline files. It's not an agent manifest: same word, different meaning.</p>
+    <div class="resolution">Resolution: When we say "manifest.yaml" we mean our table of contents. When the industry says "manifest" they mean an agent config. Be specific about which one you mean.</div>
+  </div>
+
+  <div class="confusion-card">
+    <h4>⚠️ "Loader" vs "Parser" vs "Orchestrator"</h4>
+    <p><strong>Orchestrator</strong> = picks which skill to use (the traffic cop)</p>
+    <p><strong>Skill</strong> = tells loader what to fetch (the recipe card)</p>
+    <p><strong>Loader</strong> = fetches guideline files from the manifest (the librarian: pulls books, doesn't judge them)</p>
+    <p><strong>Parser</strong> = the design-system MCP server's file reader that auto-indexes .md into a searchable database (completely separate system)</p>
+    <div class="resolution">Flow: Orchestrator → skill → loader → files → skill/LLM applies precedence. Parser is in a different system entirely (the design-system MCP server).</div>
+  </div>
+
+  <div class="confusion-card">
+    <h4>⚠️ "Package index" vs "MCP index"</h4>
+    <p><strong>Package index</strong> = our hand-authored table of contents (manifest.yaml in each folder). We write and maintain it.</p>
+    <p><strong>MCP index</strong> = the design-system MCP server's auto-generated searchable database. We don't write it; it's built from our .md files automatically by the Parser.</p>
+    <div class="resolution">We author one (package index). The other (MCP index) is built from our files automatically.</div>
+  </div>
+
+  <div class="confusion-card">
+    <h4>⚠️ "Base package" vs "base layer"</h4>
+    <p><strong>Base package</strong> = the FULL deliverable (all files: general guidelines + AI guidelines). This is what we ship to partners.</p>
+    <p><strong>Base layer</strong> = just the general guidelines files specifically. The lowest-precedence layer in the precedence chain.</p>
+    <div class="resolution">"Base package" = everything we deliver. "Base layer" = just the general guidelines portion within it.</div>
+  </div>
+
+  <div class="confusion-card">
+    <h4>⚠️ "Instruction" vs "Skill"</h4>
+    <p><strong>After the format change:</strong> Instructions = content merged into guideline files (the "what to follow").</p>
+    <p><strong>Skill</strong> = orchestration logic in a SKILL.md file (the "how to load and apply"). Files are pure content; skills handle routing.</p>
+    <div class="resolution">Files = content only (no routing logic). Skills = routing only (no content embedded). Clean separation.</div>
+  </div>
+
+  <div class="confusion-card">
+    <h4>⚠️ "Index" (two meanings)</h4>
+    <p><strong>Package index</strong> = our authored file (manifest.yaml) listing what guideline files exist per folder. Hand-written by us.</p>
+    <p><strong>MCP index</strong> = auto-built searchable database inside the design-system MCP server. Rebuilt every time the Parser reads our .md files.</p>
+    <div class="resolution">If someone says "the index," ask: "do you mean our package index or the design-system MCP server's index?"</div>
+  </div>
+</div>
+
+</div><!-- end .content -->
+
+<script>
+function showTab(tabId) {
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById(tabId).classList.add('active');
+  event.target.classList.add('active');
+}
+
+// Accordion toggle
+document.querySelectorAll('.accordion-header').forEach(h => {
+  h.addEventListener('click', () => {
+    h.parentElement.classList.toggle('open');
+  });
+});
+</script>
+</body>
+</html>
