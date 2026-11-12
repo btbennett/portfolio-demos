@@ -218,7 +218,7 @@ body { font-family: 'Segoe UI', -apple-system, sans-serif; background: var(--gra
   
   <div class="card">
     <h3>The short version</h3>
-    <p>The <strong>base package</strong> is a collection of markdown files in a GitHub repo. These files contain content guidelines (rules, patterns, terminology, and examples) that AI tools use to help people write great UI content for Microsoft Security products.</p>
+    <p>The <strong>base package</strong> is a collection of markdown files in a GitHub repo, written in the Open Knowledge Format (OKF): one topic per file, with a short header on each. These files contain content guidelines (rules, patterns, terminology, and examples) that AI tools use to help people write great UI content for Microsoft Security products.</p>
     <p style="margin-top: 12px">Think of it as a reference library that AI tools consult. When a content designer asks an AI tool to "write an error message for Sentinel," the tool checks our guidelines to make sure the output follows Microsoft voice, uses the right terms, meets accessibility standards, and matches the security tone.</p>
   </div>
 
@@ -289,7 +289,13 @@ body { font-family: 'Segoe UI', -apple-system, sans-serif; background: var(--gra
   <div class="card package">
     <h3>Frontmatter</h3>
     <p>A small metadata block at the top of each .md file written in YAML format (between --- markers). Contains: title, type, tags, version, scope.</p>
-    <div class="plain">Helps tools identify what a file is about and whether it's relevant to the current task.</div>
+    <div class="plain">Helps tools identify what a file is about and whether it's relevant to the current task. The header follows OKF conventions (see Open Knowledge Format).</div>
+  </div>
+  <div class="card package">
+    <h3>Open Knowledge Format (OKF)</h3>
+    <p>An open format for knowledge that AI tools can read: plain markdown files, one topic per file, each with a short YAML frontmatter header that says what the file is. We followed its conventions when we moved the package to markdown, so every guideline file has the same kind of header.</p>
+    <p>Why it helps: tools can scan the headers to find the files a task needs without reading every file. The files stay plain text that we edit and review in the repo, with no database or special software. And because the format is open, other tools can read the same files without a custom converter.</p>
+    <div class="plain">Like a filing cabinet where every folder has the same kind of index card on the front. Any tool can flip through the cards and pull only what it needs.</div>
   </div>
 
   <div class="group-label">⚙️ The plumbing (how guidelines get delivered)</div>
@@ -345,7 +351,7 @@ body { font-family: 'Segoe UI', -apple-system, sans-serif; background: var(--gra
   <div class="card infra">
     <h3>Parser</h3>
     <p>The component inside the design-system MCP server that reads files and builds a searchable database. Optimized for .md files. Ignores .yaml if no .md version exists.</p>
-    <div class="plain">This is THE technical reason we convert everything to markdown. The Parser can't read YAML.</div>
+    <div class="plain">This is THE technical reason we convert everything to markdown. The Parser can't read YAML. Markdown with frontmatter is also the OKF shape, so the same files work for tools outside the MCP server.</div>
   </div>
   <div class="card infra">
     <h3>MCP index</h3>
@@ -593,6 +599,13 @@ body { font-family: 'Segoe UI', -apple-system, sans-serif; background: var(--gra
     <p><strong>Package index</strong> = our authored file (manifest.yaml) listing what guideline files exist per folder. Hand-written by us.</p>
     <p><strong>MCP index</strong> = auto-built searchable database inside the design-system MCP server. Rebuilt every time the Parser reads our .md files.</p>
     <div class="resolution">If someone says "the index," ask: "do you mean our package index or the design-system MCP server's index?"</div>
+  </div>
+
+  <div class="confusion-card">
+    <h4>⚠️ "Frontmatter" vs "Package index"</h4>
+    <p><strong>Frontmatter</strong> = the short header at the top of ONE file (OKF) that says what that file is.</p>
+    <p><strong>Package index</strong> = manifest.yaml, one per folder, listing the files in that folder and its routing rules.</p>
+    <div class="resolution">Frontmatter describes a file. The package index describes a folder.</div>
   </div>
 </div>
 
